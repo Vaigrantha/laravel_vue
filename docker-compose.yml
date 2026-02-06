@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    image: bibliocon:latest
+    container_name: bibliocon_app
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    container_name: bibliocon_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: bibliocon_db
+    environment:
+      MYSQL_DATABASE: bibliocon
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: bibliocon
+      MYSQL_PASSWORD: secret
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    container_name: bibliocon_redis
+
+  queue:
+    image: bibliocon:latest
+    container_name: bibliocon_queue
+    command: php artisan queue:work
+    volumes:
+      - .:/var/www
+    depends_on:
+      - app
+      - redis
+
+volumes:
+  db_data:
