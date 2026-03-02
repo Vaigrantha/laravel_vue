@@ -39,6 +39,7 @@ export function useEpubReader() {
     | Load Book
     |--------------------------------------------------------------------------
     */
+    // useEpubReader.ts
 
     const load = async (file: File) => {
         if (!viewer.value) return;
@@ -46,40 +47,41 @@ export function useEpubReader() {
         isLoading.value = true;
         isLoaded.value = false;
 
-        const buffer = await file.arrayBuffer();
+        try {
+            const buffer = await file.arrayBuffer();
+            book.value = ePub(buffer);
 
-        book.value = ePub(buffer);
+            rendition.value = book.value.renderTo(viewer.value, {
+                width: '100%',
+                height: '100%',
+                flow: 'paginated',
+                manager: 'default',
+            });
 
-        rendition.value = book.value.renderTo(viewer.value, {
-            width: '100%',
-            height: '100%',
-            flow: 'paginated',
-            spread: 'none',
-            manager: 'default',
-        });
+            // 1. Initial Display
+            await rendition.value.display();
 
-        await book.value.ready;
-        await rendition.value.display();
+            // 2. Setup listeners and theme
+            rendition.value.on('relocated', handleRelocated);
+            initResizeObserver();
+            registerKeyboard();
+            applyTheme();
 
-        applyTheme();
+            const navigation = await book.value.loaded.navigation;
+            toc.value = navigation.toc;
 
-        const navigation = await book.value.loaded.navigation;
-        toc.value = navigation.toc;
+            // 3. Mark as loaded so UI shows the content
+            isLoaded.value = true;
+            isLoading.value = false; // Hide loader early so user sees text
 
-        await book.value.locations.generate(1600);
-        totalPages.value = book.value.locations.length();
-
-        // Relocation listener (page tracking)
-        rendition.value.on('relocated', handleRelocated);
-
-        // Force initial page calculation
-        updateCurrentPage();
-
-        initResizeObserver();
-        registerKeyboard();
-
-        isLoading.value = false;
-        isLoaded.value = true;
+            // 4. Calculate pagination in background
+            await book.value.locations.generate(1600);
+            totalPages.value = book.value.locations.length();
+            updateCurrentPage();
+        } catch (error) {
+            console.error('Load error:', error);
+            isLoading.value = false;
+        }
     };
 
     /*
@@ -89,24 +91,34 @@ export function useEpubReader() {
     */
 
     const handleRelocated = (location: any) => {
-        if (!book.value) return;
+        // Check if location and start exist before accessing cfi
+        if (!book.value || !location?.start?.cfi) return;
 
         const index = book.value.locations.locationFromCfi(location.start.cfi);
 
-        if (typeof index === 'number') {
+        if (typeof index === 'number' && index !== -1) {
             currentPage.value = index + 1;
         }
     };
 
     const updateCurrentPage = () => {
-        if (!rendition.value || !book.value) return;
+        // If locations haven't been generated yet, we can't determine the page index
+        if (
+            !rendition.value ||
+            !book.value ||
+            !book.value.locations?.length()
+        ) {
+            return;
+        }
 
         const location = rendition.value.currentLocation() as any;
-        if (!location) return;
 
-        const index = book.value.locations.locationFromCfi(location.start.cfi);
+        // Safely check for the CFI
+        const cfi = location?.start?.cfi;
+        if (!cfi) return;
 
-        if (typeof index === 'number') {
+        const index = book.value.locations.locationFromCfi(cfi);
+        if (typeof index === 'number' && index !== -1) {
             currentPage.value = index + 1;
         }
     };
@@ -131,7 +143,7 @@ export function useEpubReader() {
         if (!rendition.value) return;
 
         try {
-            await rendition.value.display(target.href || target);
+            await rendition.value.display(target.href);
             updateCurrentPage();
         } catch (e) {
             console.warn('Navigation failed:', e);
@@ -144,23 +156,28 @@ export function useEpubReader() {
     |--------------------------------------------------------------------------
     */
 
+    // ... inside useEpubReader.ts ...
+
     const setFont = async (size: number) => {
         const clamped = Math.min(200, Math.max(80, size));
         fontSize.value = clamped;
 
         if (!rendition.value || !book.value) return;
 
+        // We only show the loader for font changes if you want to block UI
+        isLoading.value = true;
+
         rendition.value.themes.fontSize(`${clamped}%`);
 
-        // 🔥 wait for reflow
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        // 🔥 regenerate pagination
-        await book.value.locations.generate(1600);
-
-        totalPages.value = book.value.locations.length();
-
-        updateCurrentPage();
+        // Reflow and recalculate
+        setTimeout(async () => {
+            if (book.value) {
+                await book.value.locations.generate(1600);
+                totalPages.value = book.value.locations.length();
+                updateCurrentPage();
+            }
+            isLoading.value = false;
+        }, 300);
     };
 
     /*

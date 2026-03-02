@@ -7,14 +7,29 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
-import { login } from '@/routes';
 import { store } from '@/routes/register';
+
+defineProps<{
+    roles: string[];
+    selectedRole: string;
+    branding: {
+        appName: string;
+        theme: string;
+        registerTitle: string;
+        registerDescription: string;
+    };
+}>();
+
+const onRoleChange = (event: Event) => {
+    const role = (event.target as HTMLSelectElement).value;
+    window.location.href = `/register/${role}`;
+};
 </script>
 
 <template>
     <AuthBase
-        title="Create an account"
-        description="Enter your details below to create your account"
+        :title="branding.registerTitle"
+        :description="branding.registerDescription"
     >
         <Head title="Register" />
 
@@ -25,6 +40,23 @@ import { store } from '@/routes/register';
             class="flex flex-col gap-6"
         >
             <div class="grid gap-6">
+                <div class="grid gap-2">
+                    <Label for="role">Role</Label>
+                    <select
+                        id="role"
+                        name="role"
+                        :value="selectedRole"
+                        class="rounded-md border px-3 py-2 text-sm"
+                        @change="onRoleChange"
+                    >
+                        <option v-for="role in roles" :key="role" :value="role">
+                            {{ role }}
+                        </option>
+                    </select>
+                </div>
+
+                <input type="hidden" name="role" :value="selectedRole" />
+
                 <div class="grid gap-2">
                     <Label for="name">Name</Label>
                     <Input
@@ -97,7 +129,7 @@ import { store } from '@/routes/register';
             <div class="text-center text-sm text-muted-foreground">
                 Already have an account?
                 <TextLink
-                    :href="login()"
+                    :href="`/login/${selectedRole}`"
                     class="underline underline-offset-4"
                     :tabindex="6"
                     >Log in</TextLink

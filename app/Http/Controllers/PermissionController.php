@@ -1,4 +1,5 @@
-<?
+<?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -8,35 +9,32 @@ class PermissionController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:sanctum', 'permission:manage permissions']);
+        $this->middleware(['auth:sanctum']);
     }
 
     public function index()
     {
-        return Permission::all();
+        return Permission::query()->get();
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|unique:permissions,name'
-        ]);
-
-        return Permission::create($validated);
+        return response()->json([
+            'message' => 'Permission creation is disabled. Assign existing permissions to roles only.',
+        ], 405);
     }
 
     public function update(Request $request, Permission $permission)
     {
-        $permission->update($request->validate([
-            'name' => 'required|unique:permissions,name,' . $permission->id
-        ]));
-
-        return $permission;
+        return response()->json([
+            'message' => 'Permission editing is disabled. Assign existing permissions to roles only.',
+        ], 405);
     }
 
     public function destroy(Permission $permission)
     {
-        $permission->delete();
-        return response()->json(['message' => 'Deleted']);
+        return response()->json([
+            'message' => 'Permission deletion is disabled. Assign existing permissions to roles only.',
+        ], 405);
     }
 }

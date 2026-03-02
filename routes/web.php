@@ -1,10 +1,9 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Author\AuthorController;
-use App\Http\Controllers\User\UserController;
+
 /*
 |--------------------------------------------------------------------------
 | Public Home (Login / Welcome)
@@ -18,6 +17,16 @@ Route::get('/', function () {
         ),
     ]);
 })->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| Login Redirect
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/redirect/by-role', [LoginController::class, 'redirectByRole'])
+    ->middleware(['auth'])
+    ->name('redirect.by.role');
 
 /*
 |--------------------------------------------------------------------------
@@ -48,3 +57,4 @@ require __DIR__.'/admin.php';
 require __DIR__.'/author.php';
 require __DIR__.'/settings.php';
 require __DIR__.'/user.php';
+require __DIR__.'/auth.php';

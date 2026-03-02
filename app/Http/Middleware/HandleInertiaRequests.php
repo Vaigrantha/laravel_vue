@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppSetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,9 +38,13 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => AppSetting::getValue('app_name', config('app.name')),
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'branding' => [
+                'theme' => AppSetting::getValue('theme', 'default'),
+                'app_name' => AppSetting::getValue('app_name', config('app.name')),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

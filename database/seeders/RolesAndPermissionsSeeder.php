@@ -11,20 +11,28 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         $roles = Config::get('roles');
 
         foreach ($roles as $roleName => $data) {
+            $role = Role::firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => 'web',
+            ]);
 
-            $role = Role::firstOrCreate(['name' => $roleName]);
+            $permissionNames = [];
 
             foreach ($data['permissions'] as $permissionName) {
-
                 $permission = Permission::firstOrCreate([
-                    'name' => $permissionName
+                    'name' => $permissionName,
+                    'guard_name' => 'web',
                 ]);
 
-                $role->givePermissionTo($permission);
+                $permissionNames[] = $permission->name;
             }
+
+            $role->syncPermissions($permissionNames);
         }
     }
 }

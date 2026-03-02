@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
     image: bibliocon:latest
-    container_name: bibliocon_app
     volumes:
       - .:/var/www
     depends_on:
@@ -13,7 +12,6 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: bibliocon_nginx
     ports:
       - "8080:80"
     volumes:
@@ -24,7 +22,6 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: bibliocon_db
     environment:
       MYSQL_DATABASE: bibliocon
       MYSQL_ROOT_PASSWORD: root
@@ -35,11 +32,9 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: bibliocon_redis
 
   queue:
     image: bibliocon:latest
-    container_name: bibliocon_queue
     command: php artisan queue:work
     volumes:
       - .:/var/www

@@ -1,45 +1,55 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:sanctum', 'permission:manage roles']);
+        $this->middleware(['auth:sanctum']);
     }
 
     public function index()
     {
-        return Role::with('permissions')->get();
+        return Role::query()->with('permissions')->get();
     }
 
     public function store(Request $request)
     {
-        $role = Role::create([
-            'name' => $request->name
+        $validated = $request->validate([
+            'name' => 'required|string|unique:roles,name',
+            'permissions' => 'array',
+            'permissions.*' => 'string|exists:permissions,name',
         ]);
 
-        $role->syncPermissions($request->permissions ?? []);
+        $role = Role::create(['name' => $validated['name']]);
+        $role->syncPermissions($validated['permissions'] ?? []);
 
-        return $role;
+        return $role->load('permissions');
     }
 
     public function update(Request $request, Role $role)
     {
-        $role->update(['name' => $request->name]);
-        $role->syncPermissions($request->permissions ?? []);
+        $validated = $request->validate([
+            'name' => 'required|string|unique:roles,name,'.$role->id,
+            'permissions' => 'array',
+            'permissions.*' => 'string|exists:permissions,name',
+        ]);
 
-        return $role;
+        $role->update(['name' => $validated['name']]);
+        $role->syncPermissions($validated['permissions'] ?? []);
+
+        return $role->load('permissions');
     }
 
     public function destroy(Role $role)
     {
         $role->delete();
+
         return response()->json(['message' => 'Deleted']);
     }
 }
-

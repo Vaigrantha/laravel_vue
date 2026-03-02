@@ -3,21 +3,10 @@ import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { useEpubReader } from '@/composables/useEpubReader';
 import ReaderControls from '@/components/ReaderControls.vue';
-import ReaderSidebar from '@/components/ReaderSidebar.vue';
 import ReaderViewer from '@/components/ReaderViewer.vue';
 import { onBeforeUnmount } from 'vue';
 
-const {
-    load,
-    next,
-    prev,
-    setFont,
-    reset,
-    toggleFullscreen,
-    fontSize,
-    viewer,
-    isLoading,
-} = useEpubReader();
+const { load, reset, viewer, isLoaded, isLoading } = useEpubReader();
 
 const handleFile = async (event: Event) => {
     const file = (event.target as HTMLInputElement)?.files?.[0];
@@ -31,37 +20,42 @@ const handleFile = async (event: Event) => {
 onBeforeUnmount(() => {
     reset();
 });
-const handleViewerReady = (el: HTMLElement) => {
-    viewer.value = el;
-};
 </script>
-
 <template>
-    <Head title="Dashboard" />
-
     <AppLayout>
-        <div class="flex flex-col gap-6 p-6">
-            <!-- Upload -->
-            <div class="rounded-xl border p-6 text-center">
-                <input type="file" accept=".epub" @change="handleFile" />
-            </div>
+        <div class="flex h-[calc(100vh-64px)] flex-col">
+            <ReaderControls />
 
-            <ReaderControls
-                :font-size="fontSize"
-                @next="next"
-                @prev="prev"
-                @fullscreen="toggleFullscreen"
-                @font="setFont"
-            />
+            <div class="relative flex-1 bg-gray-50 dark:bg-black">
+                <div
+                    v-if="!isLoaded && !isLoading"
+                    class="flex h-full items-center justify-center"
+                >
+                    <label
+                        class="cursor-pointer rounded-lg border-2 border-dashed p-12 hover:bg-gray-100"
+                    >
+                        <span class="text-gray-600">Click to upload EPUB</span>
+                        <input
+                            type="file"
+                            class="hidden"
+                            accept=".epub"
+                            @change="handleFile"
+                        />
+                    </label>
+                </div>
 
-            <div class="grid h-[calc(100vh-200px)] grid-cols-[260px_1fr] gap-6">
-                <ReaderViewer @ready="handleViewerReady" />
+                <ReaderViewer v-show="isLoaded" />
 
                 <div
                     v-if="isLoading"
-                    class="absolute inset-0 flex items-center justify-center bg-black/40"
+                    class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-black/80"
                 >
-                    <div class="text-white">Loading book...</div>
+                    <div class="flex flex-col items-center gap-2">
+                        <div
+                            class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"
+                        ></div>
+                        <p class="text-sm font-medium">Updating pages...</p>
+                    </div>
                 </div>
             </div>
         </div>

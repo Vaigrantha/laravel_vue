@@ -3,18 +3,30 @@
 namespace App\Http\Controllers\Author;
 
 use App\Http\Controllers\Controller;
+use App\Models\Book;
+use App\Models\User;
 use Inertia\Inertia;
 
 class AuthorController extends Controller
 {
     public function dashboard()
     {
-        return Inertia::render('Author/Dashboard');
+        return Inertia::render('Author/Dashboard', [
+            'stats' => [
+                'books' => Book::query()->count(),
+                'myRole' => 'author',
+            ],
+        ]);
     }
 
     public function index()
     {
-        return Inertia::render('Author/Index');
+        return Inertia::render('Author/Index', [
+            'authors' => User::query()
+                ->role('author')
+                ->latest()
+                ->get(['id', 'name', 'email', 'created_at']),
+        ]);
     }
 
     public function create()
@@ -22,10 +34,10 @@ class AuthorController extends Controller
         return Inertia::render('Author/Create');
     }
 
-    public function edit($id)
+    public function edit(int $id)
     {
         return Inertia::render('Author/Edit', [
-            'id' => $id
+            'author' => User::query()->role('author')->findOrFail($id),
         ]);
     }
 }

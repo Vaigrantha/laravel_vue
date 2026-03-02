@@ -1,4 +1,5 @@
-<?
+<?php
+
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -9,8 +10,10 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-
-    use Notifiable, TwoFactorAuthenticatable, HasApiTokens, HasRoles;
+    use Notifiable;
+    use TwoFactorAuthenticatable;
+    use HasApiTokens;
+    use HasRoles;
 
     protected $fillable = [
         'name',
@@ -22,9 +25,11 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
     protected $appends = ['role_name'];
 
-    protected function getRoleNameAttribute(){
+    public function getRoleNameAttribute(): ?string
+    {
         return $this->getRoleNames()->first();
     }
 }
