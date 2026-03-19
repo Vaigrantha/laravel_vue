@@ -4,6 +4,11 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
     image: ${APP_IMAGE:-laravel-app}
+    environment:
+      # Make the container independent of the host's `.env` values.
+      APP_URL: ${APP_URL_DOCKER:-http://localhost:${APP_PORT:-8080}}
+      DB_HOST: ${DB_HOST_DOCKER:-db}
+      REDIS_HOST: ${REDIS_HOST_DOCKER:-redis}
     volumes:
       - .:/var/www
 
@@ -22,6 +27,9 @@ services:
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-laravel}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      # Publish for host `php artisan` / local tools (override if it conflicts).
+      - "${DB_FORWARD_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -33,10 +41,16 @@ services:
 
   redis:
     image: ${REDIS_IMAGE:-redis:alpine}
+    ports:
+      - "${REDIS_FORWARD_PORT:-6379}:6379"
 
   queue:
     image: ${APP_IMAGE:-laravel-app}
     command: ${QUEUE_WORKER_COMMAND:-php artisan queue:work}
+    environment:
+      APP_URL: ${APP_URL_DOCKER:-http://localhost:${APP_PORT:-8080}}
+      DB_HOST: ${DB_HOST_DOCKER:-db}
+      REDIS_HOST: ${REDIS_HOST_DOCKER:-redis}
     volumes:
       - .:/var/www
     depends_on:
